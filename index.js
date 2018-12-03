@@ -1,4 +1,5 @@
 const express = require('express')
+const validate = require('validate.js');
 
 const app = express()
 const port = 3000
@@ -6,84 +7,117 @@ const port = 3000
 app.use(express.json())
 
 const todos = {
-    id: 0,
-    items: [],
-    add: function (message) {
-        const todo = { 'id': ++todos.id, 'message': message }
-        todos.items.push(todo)
+    _id: 0,
+    _items: [],
+    add: function (message, accountId) {
+        const todo = { account_Id: accountId, message: message }
+        const idError = validate.single(accountId, { presence: true, length: { minimum: 1 } });
+
+        if (idError) {
+            throw "Account Id " + idError[0];
+        }
+
+        todo._id = ++todos._id;
+        todos._items.push(todo)
         return todo
     },
-    idCheck: function (idGiven) {
-        for (let i = 0; i < todos.items.length; i++) {
-            if (todos.items[i].id === idGiven) {
+    _idCheck: function (idGiven) {
+        for (let i = 0; i < todos._items.length; i++) {
+            if (todos._items[i]._id === idGiven) {
                 return i
             }
         }
         throw "id does not exist"
     },
     getById: function (idGiven) {
-        const position = todos.idCheck(idGiven)
-        return todos.items[position]
+        const position = todos._idCheck(idGiven)
+        return todos._items[position]
     },
     update: function (idGiven, message) {
-        const position = todos.idCheck(idGiven)
-        todos.items[position].message = message
-        return todos.items[position]
+        const position = todos._idCheck(idGiven)
+        todos._items[position].message = message
+        return todos._items[position]
     },
     delete: function (idGiven) {
-        const position = todos.idCheck(idGiven)
-        todos.items.splice(position, 1)
+        const position = todos._idCheck(idGiven)
+        todos._items.splice(position, 1)
         return "deleted"
     },
     getAll: function () {
-        return todos.items
+        return todos._items
     }
 }
 
 const accounts = {
-    id: 0,
-    items: [],
-    create: function (firstName, lastName, email) {
-        const account = {
-            id: ++accounts.id,
-            firstName: firstName,
-            lastName: lastName,
-            email: email,
+    _id: 0,
+    _items: [],
+    _inputCheck: function (acctObj) {
+        const constraints = {
+            firstName: {
+                presence: true,
+                length: { minimum: 1 }
+            },
+            lastName: {
+                presence: true,
+                length: { minimum: 1 }
+            },
+            email: {
+                presence: true,
+                email: true
+            }
         }
-        for (let i = 0; i < accounts.items.length; i++) {
-            if (accounts.items[i].email === email) {
+
+        const inputErrors = validate(acctObj, constraints, { format: 'flat' });
+        if (inputErrors) {
+            throw inputErrors
+        }
+    },
+    create: function (firstName, lastName, email) {
+        const account = { firstName, lastName, email }
+
+        accounts._inputCheck(account);
+
+        for (let i = 0; i < accounts._items.length; i++) {
+            if (accounts._items[i].email === email) {
                 throw "email already exists"
             }
         }
-        accounts.items.push(account)
+
+        account._id = ++accounts._id
+        accounts._items.push(account)
         return account
     },
     getAll: function () {
-        return accounts.items
+        return accounts._items
     },
-    idCheck: function (idGiven) {
-        for (let i = 0; i < accounts.items.length; i++) {
-            if (accounts.items[i].id === idGiven) {
+    _idCheck: function (idGiven) {
+        for (let i = 0; i < accounts._items.length; i++) {
+            if (accounts._items[i]._id === idGiven) {
                 return i
             }
         }
         throw "id does not exist"
     },
     getById: function (idGiven) {
-        const position = accounts.idCheck(idGiven)
-        return accounts.items[position]
+        const position = accounts._idCheck(idGiven)
+        return accounts._items[position]
     },
-    update: function (idGiven, fName, lName, email2) {
-        const position = accounts.idCheck(idGiven);
-        const item = accounts.items[position];
-        item.firstName = fName;
-        item.lastName = lName;
-        item.email = email2;
+    update: function (idGiven, firstName, lastName, email) {
+        const position = accounts._idCheck(idGiven);
+        const item = accounts._items[position];
+        const accountUpdate = { firstName, lastName, email }
+
+        accounts._inputCheck(accountUpdate);
+
+        item.firstName = firstName;
+        item.lastName = lastName;
+        item.email = email;
+
         return item
     },
     delete: function (idGiven) {
-        const position = accounts.idCheck(idGiven)
-        accounts.items.splice(position, 1)
+        const position = accounts._idCheck(idGiven)
+        accounts._items.splice(position, 1)
         return "deleted"
     }
 }
@@ -94,7 +128,14 @@ app.get('/todo', (req, res) => res.json(todos.getAll()))
 
 // POST /todo => insert new todo using body as message, return new todo with id included
 app.post('/todo', (req, res) => {
-    res.status(201).json(todos.add(req.body.message))
+    const message = req.body.message;
+    const accountId = req.body.account_Id;
+    try {
+        res.status(201).json(todos.add(message, accountId));
+    } catch (e) {
+        res.status(400).json({ error: e })
+    }
+
 })
 
 // GET /todo/<id> => return todo with id = <id>
@@ -134,7 +175,7 @@ app.get('/account', (req, res) => {
     res.json(accounts.getAll())
 })
 
-// POST /account => create new account using ***body*** as message, return new account created with id inlcuded
+// POST /account => create new account using body for first name, last name, and email, return new account created with id inlcuded
 app.post('/account', (req, res) => {
     const { firstName, lastName, email } = req.body;
     try {
