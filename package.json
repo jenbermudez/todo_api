@@ -4,16 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
-    "test": "jest"
+    "dev": "nodemon --exec babel-node src/index.js",
+    "test": "jest",
+    "build": "babel src --out-dir dist",
+    "serve": "node dist/index.js"
   },
   "author": "Jennifer",
   "license": "ISC",
   "dependencies": {
     "express": "^4.16.4",
+    "sqlite": "^3.0.0",
     "validate.js": "^0.12.0"
   },
   "devDependencies": {
+    "@babel/cli": "^7.2.0",
+    "@babel/core": "^7.2.2",
+    "@babel/node": "^7.2.2",
+    "@babel/preset-env": "^7.2.0",
     "eslint": "^5.9.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.14.0",

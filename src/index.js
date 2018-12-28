@@ -1,8 +1,29 @@
-const express = require('express');
-const { todos, accounts } = require('./models.js');
+import express from 'express';
+import sqlite from 'sqlite';
+import { todos, accounts } from './models';
 
 const app = express();
 const port = 3000;
+let db;
+
+async function main() {
+  db = await sqlite.open('./main.sqlite');
+  await db.migrate({ force: 'last' });
+
+  // get all from a table
+  const test = await db.all('select * from account');
+  console.log(test);
+
+  // insert something into a table
+  const { lastID: id } = await db.run('insert into account (firstname, lastname, email) values("sam", "hagan","shithead")');
+
+  // get one item from a table
+  const lastInsert = await db.get('select * from account where id = ?', id);
+  console.log(lastInsert);
+
+  // start server
+  app.listen(port, () => console.log(`Server listening on port ${port}`));
+}
 
 app.use(express.json());
 
@@ -11,7 +32,7 @@ function checkError(e, res) {
     res.status(400).json({ error: e.message });
   } else {
     console.error(e);
-    throw 'Something went wrong  ¯\\_(ツ)_/¯';
+    throw 'Something went wrong ¯\\_(ツ)_/¯';
   }
 }
 
@@ -21,7 +42,7 @@ app.get('/todo', (req, res) => res.json(todos.getAll()));
 
 // POST /todo => insert new todo using body as message, return new todo with id included
 app.post('/todo', (req, res) => {
-  const message = req.body.message;
+  const { message } = req.body;
   const accountId = req.body.account_Id;
   try {
     res.status(201).json(todos.add(message, accountId));
@@ -108,4 +129,4 @@ app.delete('/account/:id', (req, res) => {
   }
 });
 
-app.listen(port, () => console.log(`Server listening on port ${port}`));
+main();

@@ -1,14 +1,14 @@
 /* eslint no-underscore-dangle: ["error", { "allow": ["_id", "_accounts",
 "_items", "_idCheck", "_inputCheck"] }] */
 
-const validate = require('validate.js');
+import validate from 'validate.js';
 
-function UserException(message) {
+export function UserException(message) {
   this.message = message;
   this.name = 'UserException';
 }
 
-const todos = {
+export const todos = {
   _id: 0,
   _items: [],
   add(message, accountId) {
@@ -53,7 +53,7 @@ const todos = {
   },
 };
 
-const accounts = {
+export const accounts = {
   _id: 0,
   _items: [],
   _inputCheck(acctObj) {
@@ -127,8 +127,3 @@ const accounts = {
   },
 };
 
-module.exports = {
-  todos,
-  accounts,
-  UserException,
-};
