@@ -1,29 +1,8 @@
 import express from 'express';
-import sqlite from 'sqlite';
 import { todos, accounts } from './models';
 
 const app = express();
 const port = 3000;
-let db;
-
-async function main() {
-  db = await sqlite.open('./main.sqlite');
-  await db.migrate({ force: 'last' });
-
-  // get all from a table
-  const test = await db.all('select * from account');
-  console.log(test);
-
-  // insert something into a table
-  const { lastID: id } = await db.run('insert into account (firstname, lastname, email) values("sam", "hagan","shithead")');
-
-  // get one item from a table
-  const lastInsert = await db.get('select * from account where id = ?', id);
-  console.log(lastInsert);
-
-  // start server
-  app.listen(port, () => console.log(`Server listening on port ${port}`));
-}
 
 app.use(express.json());
 
@@ -129,4 +108,4 @@ app.delete('/account/:id', (req, res) => {
   }
 });
 
-main();
+app.listen(port, () => console.log(`Server listening on port ${port}`));
